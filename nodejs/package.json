@@ -1,0 +1,23 @@
+{
+  "name": "webservermidterm",
+  "version": "1.0.0",
+  "description": "Wild West Forum",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"	
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alegomonkey/WebserverMidterm.git"
+  },
+  "author": "Johnny Sylvain",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/alegomonkey/WebserverMidterm/issues"
+  },
+  "homepage": "https://github.com/alegomonkey/WebserverMidterm#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
