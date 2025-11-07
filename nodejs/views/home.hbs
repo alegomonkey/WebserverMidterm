@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Session Demo</title>
+</head>
+<body>
+    <h1>Session Demo Application</h1>
+    
+    <h2>Current User Information</h2>
+    <p><strong>Name:</strong> {{user.name}}</p>
+    <p><strong>Status:</strong> {{#if user.isLoggedIn}}Logged In{{else}}Guest{{/if}}</p>
+    {{#if user.isLoggedIn}}
+    <p><strong>Login Time:</strong> {{user.loginTime}}</p>
+    <p><strong>Visit Count:</strong> {{user.visitCount}}</p>
+    {{/if}}
+    
+    <p>
+        {{#if user.isLoggedIn}}
+            <a href="/profile">View Profile</a> | 
+            <form method="POST" action="/logout" style="display: inline;">
+                <button type="submit">Logout</button>
+            </form>
+        {{else}}
+            <a href="/login">Login</a>
+        {{/if}}
+    </p>
+    
+</body>
+</html>

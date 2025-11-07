@@ -1,7 +1,7 @@
 services:
   # Node.js Express application
   backend-nodejs:
-    build: ./backend
+    build: ./nodejs
     container_name: backend-nodejs
     restart: unless-stopped
     environment:

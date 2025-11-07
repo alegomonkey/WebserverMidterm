@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - Session Demo</title>
+</head>
+<body>
+    <h1>Login</h1>
+    
+    <form method="POST" action="/login">
+        <p>
+            <label for="username">Username:</label><br>
+            <input type="text" id="username" name="username" required>
+        </p>
+        
+        <p>
+            <label for="password">Password:</label><br>
+            <input type="password" id="password" name="password" required>
+        </p>
+        
+        <p>
+            <button type="submit">Login</button>
+            <a href="/">Cancel</a>
+        </p>
+    </form>
+    
+    {{#if error}}
+    <p style="color: red;">Please enter both username and password.</p>
+    {{/if}}
+    
+</body>
+</html>

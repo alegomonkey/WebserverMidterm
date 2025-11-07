@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Profile - Session Demo</title>
+</head>
+<body>
+    <h1>User Profile</h1>
+    
+    <h2>Welcome, {{user.name}}!</h2>
+    <p><strong>Login Time:</strong> {{user.loginTime}}</p>
+    <p><strong>Visit Count:</strong> {{user.visitCount}}</p>
+    
+    <p>
+        <a href="/">Home</a> | 
+        <form method="POST" action="/logout" style="display: inline;">
+            <button type="submit">Logout</button>
+        </form>
+    </p>
+    
+</body>
+</html>
