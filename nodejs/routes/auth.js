@@ -24,19 +24,19 @@ router.post('/register', async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.redirect('/auth/register?error=' + encodeURIComponent('Username and password are required.'));
+      return res.redirect('/register?error=' + encodeURIComponent('Username and password are required.'));
     }
 
     const validation = validatePassword(password);
     if (!validation.valid) {
-      return res.redirect('/auth/register?error=' +
+      return res.redirect('/register?error=' +
         encodeURIComponent('Password does not meet requirements: ' + validation.errors.join(', '))
       );
     }
 
     const existingUser = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
     if (existingUser) {
-      return res.redirect('/auth/register?error=' + encodeURIComponent('Username already exists.'));
+      return res.redirect('/register?error=' + encodeURIComponent('Username already exists.'));
     }
 
     const passwordHash = await hashPassword(password);
@@ -49,7 +49,7 @@ router.post('/register', async (req, res) => {
     console.error('Registration error:', error);
     res.render('error', {
       message: 'An internal server error occurred.',
-      back: '/auth/register'
+      back: '/register'
     });
   }
 });
@@ -74,17 +74,17 @@ router.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.redirect('/auth/login?error=' + encodeURIComponent('Username and password are required.'));
+      return res.redirect('/login?error=' + encodeURIComponent('Username and password are required.'));
     }
 
     const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
     if (!user) {
-      return res.redirect('/auth/login?error=' + encodeURIComponent('Invalid username or password.'));
+      return res.redirect('/login?error=' + encodeURIComponent('Invalid username or password.'));
     }
 
     const passwordMatch = await comparePassword(password, user.password_hash);
     if (!passwordMatch) {
-      return res.redirect('/auth/login?error=' + encodeURIComponent('Invalid username or password.'));
+      return res.redirect('/login?error=' + encodeURIComponent('Invalid username or password.'));
     }
 
     // Set session
@@ -102,7 +102,7 @@ router.post('/login', async (req, res) => {
     console.error('Login error:', error);
     res.render('error', {
       message: 'An internal server error occurred.',
-      back: '/auth/login'
+      back: '/login'
     });
   }
 });
@@ -144,7 +144,7 @@ router.post('/logout', (req, res) => {
  */
 router.get('/me', (req, res) => {
   if (!req.session.isLoggedIn) {
-    return res.redirect('/auth/login');
+    return res.redirect('/login');
   }
 
   const user = db.prepare(

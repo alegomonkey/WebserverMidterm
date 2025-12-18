@@ -6,7 +6,10 @@
 </head>
 <body>
   <h1>Error</h1>
-  <p id="message">An error occurred.</p>
-  <a href="/" id="back-link">← Back to Home</a>
+  <p>{{message}}</p>
+
+  {{#if back}}
+  <a href="{{back}}">Go back</a>
+  {{/if}}
 </body>
 </html>

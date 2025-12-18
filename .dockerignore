@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+yarn-error.log
+dist
+build
+coverage
+.env
+.env.*
+.DS_Store
+.git
+.gitignore
+docker-compose.yml
+*.md
+*.log

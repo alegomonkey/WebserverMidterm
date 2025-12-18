@@ -10,7 +10,7 @@
     <div class="content-box">
         <h1>Check In at the Saloon</h1>
         
-        <form method="POST" action="/api/auth/login">
+        <form method="POST" action="/login">
             <p>
                 <label for="username">Badge Number:</label><br>
                 <input type="text" id="username" name="username" required>
@@ -31,7 +31,7 @@
         <p style="color: red;">Invalid Badge Number and Lockbox Code.</p>
         {{/if}}
 
-        <p><a href="/api/auth/register">Havn't registered at the Ledger? Resgister here.</a></p>
+        <p><a href="/register">Havn't registered at the Ledger? Resgister here.</a></p>
         <p><a href="/">← Back to Home</a></p>
     </div>
     {{> footer }}
