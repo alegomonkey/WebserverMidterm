@@ -4,8 +4,8 @@ const router = express.Router();
 const db = require('../database');
 const { validatePassword, hashPassword, comparePassword } = require('../modules/password-utils');
 
-/**
- * GET /register - Show registration form (Handlebars)
+/*
+ * GET /register
  */
 router.get('/register', (req, res) => {
   res.render('register', {
@@ -16,8 +16,8 @@ router.get('/register', (req, res) => {
   });
 });
 
-/**
- * POST /register - Register a new user
+/*
+ POST /register
  */
 router.post('/register', async (req, res) => {
   try {
@@ -64,8 +64,8 @@ router.post('/register', async (req, res) => {
   }
 });
 
-/**
- * GET /login - Show login form (Handlebars)
+/*
+ GET /login
  */
 router.get('/login', (req, res) => {
   res.render('login', {
@@ -76,26 +76,79 @@ router.get('/login', (req, res) => {
   });
 });
 
-/**
- * POST /login - Authenticate user
+/*
+ POST /login
  */
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
+    // check username and password input
     if (!username || !password) {
       return res.redirect('/login?error=' + encodeURIComponent('Username and password are required.'));
     }
 
+    // Do not reveal whether username exists or password wrong
     const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
     if (!user) {
       return res.redirect('/login?error=' + encodeURIComponent('Invalid username or password.'));
     }
 
+    // Check if account is locked
+    if (user.account_locked_until) {
+      const lockedUntil = new Date(user.account_locked_until);
+      const now = new Date();
+
+      if (lockedUntil > now) {
+        const minutesLeft = Math.ceil((lockedUntil - now) / 60000);
+        return res.redirect('/login?error=' +
+          encodeURIComponent(`Account locked. Try again in ${minutesLeft} minute(s).`)
+        );
+      }
+    }
+
+    // Compare password
     const passwordMatch = await comparePassword(password, user.password_hash);
+
     if (!passwordMatch) {
+      // Increment failed attempts
+      const newAttempts = user.failed_login_attempts + 1;
+
+      // Lock account after 5 failed attempts
+      if (newAttempts >= 5) {
+        const lockMinutes = 15; // lockout duration minutes
+        const lockUntil = new Date(Date.now() + lockMinutes * 60000).toISOString();
+
+        db.prepare(`
+          UPDATE users
+          SET failed_login_attempts = ?, account_locked_until = ?
+          WHERE id = ?
+        `).run(newAttempts, lockUntil, user.id);
+
+        return res.redirect('/login?error=' +
+          encodeURIComponent(`Too many failed attempts. Account locked for ${lockMinutes} minutes.`)
+        );
+      }
+
+      // update failed attempts
+      db.prepare(`
+        UPDATE users
+        SET failed_login_attempts = ?
+        WHERE id = ?
+      `).run(newAttempts, user.id);
+
+      // Do not reveal whether username exists or password wrong
       return res.redirect('/login?error=' + encodeURIComponent('Invalid username or password.'));
     }
+
+    // Successful login - reset counters
+    db.prepare(`
+      UPDATE users
+      SET failed_login_attempts = 0,
+          account_locked_until = NULL,
+          last_login = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(user.id);
 
     // Set session
     req.session.userId = user.id;
@@ -117,8 +170,8 @@ router.post('/login', async (req, res) => {
   }
 });
 
-/**
- * GET /logout
+/*
+ GET /logout
  */
 router.get('/logout', (req, res) => {
   req.session.destroy(err => {
@@ -133,8 +186,8 @@ router.get('/logout', (req, res) => {
   });
 });
 
-/**
- * POST /logout
+/*
+ POST /logout
  */
 router.post('/logout', (req, res) => {
   req.session.destroy(err => {
@@ -149,8 +202,8 @@ router.post('/logout', (req, res) => {
   });
 });
 
-/**
- * GET /me - Profile (Handlebars)
+/*
+ GET /me
  */
 router.get('/me', (req, res) => {
   if (!req.session.isLoggedIn) {
