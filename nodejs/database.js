@@ -37,9 +37,6 @@ db.exec(`
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         text TEXT NOT NULL,
-        text_html TEXT NOT NULL,
-        edited_at DATETIME,
-        parent_id INTEGER DEFAULT NULL,
         votes INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -47,29 +44,22 @@ db.exec(`
         FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
     );
 
-    CREATE TABLE IF NOT EXISTS comment_votes (
+    CREATE TABLE IF NOT EXISTS comment_user_votes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        comment_id INTEGER NOT NULL,
         user_id INTEGER NOT NULL,
-        vote INTEGER CHECK(vote IN (-1, 1)),
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(comment_id, user_id),
-        FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        comment_id INTEGER NOT NULL,
+        vote INTEGER NOT NULL, -- +1 or -1
+        UNIQUE(user_id, comment_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE
     );
+
 
     CREATE TABLE IF NOT EXISTS chat_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         message TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    );
-
-    CREATE TABLE IF NOT EXISTS chat_views (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        last_viewed DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 `);
@@ -86,30 +76,6 @@ db.exec(`
     AFTER UPDATE ON comments 
     BEGIN
         UPDATE comments SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-    END;
-`);
-
-// Creates table for PDF document storage with metadata and download tracking
-db.exec(`
-    CREATE TABLE IF NOT EXISTS pdf_documents (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        filename TEXT UNIQUE NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT,
-        slug TEXT UNIQUE NOT NULL,
-        file_size INTEGER,
-        page_count INTEGER,
-        upload_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        downloads INTEGER DEFAULT 0,
-        user_id INTEGER,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-    );
-    
-    CREATE TRIGGER IF NOT EXISTS update_pdf_documents_timestamp
-    AFTER UPDATE ON pdf_documents
-    BEGIN
-        UPDATE pdf_documents SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
     END;
 `);
 

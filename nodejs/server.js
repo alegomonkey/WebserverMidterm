@@ -8,9 +8,11 @@ const hbs = require('hbs');
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const chatRoutes = require('./routes/chat');
+const commentsRoutes = require('./routes/comment');
 
 const http = require('http');
 const { Server } = require('socket.io');
+const db = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3010;
@@ -77,6 +79,19 @@ app.get('/', (req, res) => {
 app.use('/', authRoutes);
 app.use('/profile', profileRoutes);
 app.use('/chat', chatRoutes);
+app.use('/comment', commentsRoutes);
+
+// Helper function for comment pagination
+hbs.registerHelper('range', function(start, end) {
+    let arr = [];
+    for (let i = start; i <= end; i++) arr.push(i);
+    return arr;
+});
+
+hbs.registerHelper('ifEquals', function(a, b, options) {
+    return a === b ? options.fn(this) : options.inverse(this);
+});
+
 
 // Socker.IO setup
 const io = new Server(server, {
@@ -131,6 +146,13 @@ io.on('connection', (socket) => {
             message: data.message,
             timestamp: new Date().toISOString()
         });
+        
+        const timestamp = new Date().toISOString();
+        // Store in DB
+        db.prepare(`
+            INSERT INTO chat_messages (user_id, message, created_at)
+            VALUES (?, ?, ?)
+        `).run(userId, data.message, timestamp);
     });
     
     socket.on('disconnect', () => {

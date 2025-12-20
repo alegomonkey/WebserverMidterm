@@ -9,19 +9,73 @@
 
     <div class="content-box">
         <h1>All Town Gossip</h1>
+
+        <p>Total Gossip Pieces: {{totalComments}}</p>
+        <p>Page {{page}} of {{totalPages}}</p>
+
         {{#if comments.length}}
             <ul>
                 {{#each comments}}
-                    <li><strong>{{author}}</strong>: {{text}} <em>({{timestamp}})</em></li>
+                    <li>
+                        <strong>{{author}}</strong>: {{text}}
+                        <em>({{timestamp}})</em>
+
+                        <div class="vote-box" data-id="{{id}}">
+                            <button class="upvote">⬆</button>
+                            <span class="score">{{votes}}</span>
+                            <button class="downvote">⬇</button>
+                        </div>
+                    </li>
                 {{/each}}
             </ul>
         {{else}}
             <p>Tumbleweeds Rollin’ Through.</p>
         {{/if}}
 
+        <div class="pagination">
+            {{#if hasPrev}}
+                <a href="/comment?page={{prevPage}}">Previous</a>
+            {{/if}}
+
+            {{#each (range 1 totalPages)}}
+                <a href="/comment?page={{this}}"
+                   class="{{#ifEquals ../page this}}active{{/ifEquals}}">
+                    {{this}}
+                </a>
+            {{/each}}
+
+            {{#if hasNext}}
+                <a href="/comment?page={{nextPage}}">Next</a>
+            {{/if}}
+        </div>
+
         <p><a href="/comment/new">Add some Gossip</a></p>
         <p><a href="/">Back to the Saloon</a></p>
     </div>
     {{> footer }}
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll('.vote-box').forEach(box => {
+                const commentId = box.dataset.id;
+                const scoreSpan = box.querySelector('.vote');
+
+                async function sendVote(value) {
+                    const res = await fetch(`/comment/${commentId}/vote`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reaction: value })
+                    });
+
+                    const data = await res.json();
+                    if (data.success) {
+                        scoreSpan.textContent = data.score;
+                    }
+                }
+
+                box.querySelector('.upvote').addEventListener('click', () => sendVote(1));
+                box.querySelector('.downvote').addEventListener('click', () => sendVote(-1));
+            });
+        });
+    </script>
 </body>
 </html>

@@ -4,42 +4,148 @@
     <meta charset="UTF-8">
     <title>Town Square Chat</title>
     <link rel="stylesheet" href="/styles.css">
+    <style>
+        /* Chat layout */
+        #chat-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: #fdf6e3;
+            border: 2px solid #c19a6b;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        #messages {
+            height: 400px;
+            overflow-y: auto;
+            background: #fff8e7;
+            border: 1px solid #c19a6b;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .message {
+            margin-bottom: 8px;
+            padding: 4px 6px;
+            border-left: 4px solid #227C70;
+            background: #ffffff;
+            border-radius: 4px;
+        }
+
+        #chatForm {
+            display: flex;
+            gap: 10px;
+        }
+
+        #chatInput {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #227C70;
+            border-radius: 4px;
+        }
+
+        #status {
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #227C70;
+        }
+    </style>
 </head>
 <body>
+
     {{> nav user=user }}
-    <h1>Town Square Chat</h1>
 
-    <div id="status">Not connected</div>
-    <div id="messages"></div>
+    <div id="chat-container">
+        <h2>Town Square – Live Gossip</h2>
 
-    <form id="chatForm">
-        <input id="chatInput" type="text" placeholder="Type your message...">
-        <button type="submit">Send</button>
-    </form>
+        <div id="status">Connecting...</div>
+
+        <div id="messages">
+            {{#each messages}}
+                <div class="message">
+                    <span style="color: {{this.name_color}}; font-weight: bold;">
+                        {{this.display_name}}
+                    </span>
+                    <span style="color: #555;">[{{this.formattedTime}}]</span>:
+                    {{this.message}}
+                </div>
+            {{/each}}
+        </div>
+
+        <form id="chatForm">
+            <input id="chatInput" type="text" placeholder="Share your gossip..." autocomplete="off">
+            <button type="submit">Send</button>
+        </form>
+    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         let socket = io(); // auto-connects to same host/port
 
+        const messagesDiv = document.getElementById('messages');
+        const statusDiv = document.getElementById('status');
+
+        // Add message to chat window
+        function addMessage(data) {
+            const div = document.createElement('div');
+            div.classList.add('message');
+
+            const time = new Date(data.timestamp).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            div.innerHTML = `
+                <span style="color:${data.color}; font-weight:bold;">
+                    ${data.username}
+                </span>
+                <span style="color:#555;">[${time}]</span>:
+                ${data.message}
+            `;
+
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Load chat history
+        async function loadHistory() {
+            const res = await fetch('/chat/history');
+            const data = await res.json();
+
+            if (data.success) {
+                data.messages.forEach(msg => addMessage({
+                    username: msg.display_name,
+                    color: msg.name_color,
+                    message: msg.message,
+                    timestamp: msg.created_at
+                }));
+            }
+        }
+
+        // Socket.IO events
         socket.on('connect', () => {
-            document.getElementById('status').textContent = 'Connected!';
+            statusDiv.textContent = 'Connected!';
+            loadHistory();
         });
 
         socket.on('connected', (data) => {
-            document.getElementById('status').textContent = data.message;
+            statusDiv.textContent = data.message;
         });
 
         socket.on('message', (data) => {
-            const msgDiv = document.createElement('div');
-            msgDiv.textContent = `${data.username}: ${data.message}`;
-            document.getElementById('messages').appendChild(msgDiv);
+            addMessage(data);
         });
 
+        // Send message
         document.getElementById('chatForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const input = document.getElementById('chatInput');
-            socket.emit('sendMessage', { message: input.value });
-            input.value = '';
+
+            if (input.value.trim() !== '') {
+                socket.emit('sendMessage', { message: input.value });
+                input.value = '';
+            }
         });
     </script>
 
