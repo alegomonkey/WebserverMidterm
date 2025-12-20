@@ -4,10 +4,13 @@ const router = express.Router();
 const db = require('../database');
 
 // GET /comment?page=1
+// paginated comments
 router.get('/', (req, res) => {
-    const perPage = 20;
+    // amount of comments per page
+    const perPage = 6;
     const page = Math.max(parseInt(req.query.page) || 1, 1);
 
+    // get # of comments
     const totalComments = db.prepare(`SELECT COUNT(*) AS count FROM comments`).get().count;
     const totalPages = Math.ceil(totalComments / perPage);
 
@@ -17,6 +20,7 @@ router.get('/', (req, res) => {
 
     const offset = (page - 1) * perPage;
 
+    // get comments by page
     const comments = db.prepare(`
         SELECT 
             c.*,
@@ -27,6 +31,7 @@ router.get('/', (req, res) => {
         LIMIT ? OFFSET ?
     `).all(perPage, offset);
 
+    // parse timestamp
     comments.forEach(c => {
         const date = new Date(c.created_at);
         c.timestamp = date.toLocaleString('en-US', {
@@ -37,10 +42,12 @@ router.get('/', (req, res) => {
         });
     });
 
+    // check user is logged in
     const user = req.session.isLoggedIn
         ? { name: req.session.username, isLoggedIn: true }
         : { isLoggedIn: false };
 
+    // Goto page
     res.render('comments', {
         title: 'Town Gossip',
         comments,
@@ -76,6 +83,7 @@ router.post('/', (req, res) => {
     const text = req.body.text;
     const userId = req.session.userId;
 
+    // insert comment to db
     db.prepare(`
         INSERT INTO comments (user_id, text)
         VALUES (?, ?)
@@ -93,12 +101,13 @@ router.post('/:id/vote', (req, res) => {
     const userId = req.session.userId;
     const commentId = parseInt(req.params.id);
     const vote = parseInt(req.body.reaction);
-
+    // prevent excess votes
     if (![1, -1].includes(vote)) {
         return res.status(400).json({ success: false, error: "Invalid vote" });
     }
 
     try {
+        // prevent multiple votes per comment
         const existing = db.prepare(`
             SELECT vote FROM comment_user_votes
             WHERE user_id = ? AND comment_id = ?
@@ -115,6 +124,7 @@ router.post('/:id/vote', (req, res) => {
                 WHERE id = ?
             `).run(vote, commentId);
 
+        // update vote (swap vote)
         } else if (existing.vote !== vote) {
             db.prepare(`
                 UPDATE comment_user_votes
@@ -128,6 +138,7 @@ router.post('/:id/vote', (req, res) => {
             `).run(vote * 2, commentId);
         }
 
+        // overall score of votes
         const score = db.prepare(`
             SELECT votes FROM comments WHERE id = ?
         `).get(commentId).votes;

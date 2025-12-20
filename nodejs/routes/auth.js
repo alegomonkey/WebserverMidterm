@@ -4,9 +4,7 @@ const router = express.Router();
 const db = require('../database');
 const { validatePassword, hashPassword, comparePassword } = require('../modules/password-utils');
 
-/*
- * GET /register
- */
+// GET /register
 router.get('/register', (req, res) => {
   res.render('register', {
     user: req.session.isLoggedIn
@@ -16,41 +14,46 @@ router.get('/register', (req, res) => {
   });
 });
 
-/*
- POST /register
- */
+// POST /register
 router.post('/register', async (req, res) => {
   try {
     const { email, username, display_name, password } = req.body;
 
+    // Check all fields are filled
     if (!username || !password || !email || !display_name) {
       return res.redirect('/register?error=' + encodeURIComponent('Email, Username, Display Username and password are required.'));
     }
 
+    // check password meets requirements
     const validation = validatePassword(password);
     if (!validation.valid) {
       return res.redirect('/register?error=' + encodeURIComponent('Password does not meet requirements: ' + validation.errors.join(', ')));
     }
 
+    // Check if Username already exists
     const existingUser = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
     if (existingUser) {
       return res.redirect('/register?error=' + encodeURIComponent('Username already exists.'));
     }
 
+    // Check if display name already exists
     const existingDisplayName = db.prepare('SELECT display_name FROM users WHERE display_name = ?').get(display_name);
     if (existingDisplayName) {
       return res.redirect('/register?error=' + encodeURIComponent('Display Name already exists.'));
     }
 
+    // Check if email is already in use
     const existingEmail = db.prepare('SELECT email FROM users WHERE email = ?').get(email);
     if (existingEmail) {
       return res.redirect('/register?error=' + encodeURIComponent('Email in use.'));
     }
 
+    // Hash password & insert into DB all fields
     const passwordHash = await hashPassword(password);
 
     db.prepare('INSERT INTO users (username, email, display_name, password_hash) VALUES (?, ?, ?, ?)').run(username, email, display_name, passwordHash);
 
+    // pass to success regestration page
     res.render('register-success', { username });
 
   } catch (error) {
@@ -62,9 +65,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-/*
- GET /login
- */
+// GET /login
 router.get('/login', (req, res) => {
   res.render('login', {
     error: req.query.error,
@@ -74,9 +75,7 @@ router.get('/login', (req, res) => {
   });
 });
 
-/*
- POST /login
- */
+// POST /login
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -153,8 +152,8 @@ router.post('/login', async (req, res) => {
     req.session.loginTime = new Date().toISOString();
     req.session.visitCount = 0;
 
+    // update db and pass to login-sccess page
     db.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
-
     res.render('login-success', { username: user.username });
 
   } catch (error) {
@@ -166,10 +165,9 @@ router.post('/login', async (req, res) => {
   }
 });
 
-/*
- GET /logout
- */
+// GET /logout
 router.get('/logout', (req, res) => {
+  // destroy session 
   req.session.destroy(err => {
     if (err) {
       console.error('Logout error:', err);
@@ -182,10 +180,9 @@ router.get('/logout', (req, res) => {
   });
 });
 
-/*
- POST /logout
- */
+// POST /logout
 router.post('/logout', (req, res) => {
+  // destroy session 
   req.session.destroy(err => {
     if (err) {
       console.error('Logout error:', err);
@@ -198,14 +195,13 @@ router.post('/logout', (req, res) => {
   });
 });
 
-/*
- GET /me
- */
+// GET /me (profile) from template
 router.get('/me', (req, res) => {
   if (!req.session.isLoggedIn) {
     return res.redirect('/login');
   }
 
+  // get session information & check if exists
   const user = db.prepare(
     'SELECT id, username, created_at, last_login FROM users WHERE id = ?'
   ).get(req.session.userId);
@@ -217,6 +213,7 @@ router.get('/me', (req, res) => {
     });
   }
 
+  // render profile page
   res.render('profile', {
     user: {
       isLoggedIn: true,

@@ -51,6 +51,8 @@ const sessionMiddleware = session({
 
 app.use(sessionMiddleware);
 
+
+// Default Route
 app.get('/', (req, res) => {
     let user = {  // We keep the Guest object to act as a default if there is no session
         name: "Guest",
@@ -81,19 +83,17 @@ app.use('/profile', profileRoutes);
 app.use('/chat', chatRoutes);
 app.use('/comment', commentsRoutes);
 
-// Helper function for comment pagination
+// Helper functions for comment pagination
 hbs.registerHelper('range', function(start, end) {
     let arr = [];
     for (let i = start; i <= end; i++) arr.push(i);
     return arr;
 });
-
 hbs.registerHelper('ifEquals', function(a, b, options) {
     return a === b ? options.fn(this) : options.inverse(this);
 });
 
-
-// Socker.IO setup
+// Socket.IO setup
 const io = new Server(server, {
     cors: {
         origin: "*",
@@ -159,7 +159,6 @@ io.on('connection', (socket) => {
         console.log(`User ${username} disconnected`);
     });
 });
-
 
 // Start server
 server.listen(PORT, () => {
